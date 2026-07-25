@@ -1,18 +1,27 @@
 {
   "name": "zyctra",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zyctra AI assistant for your terminal — AI that remembers you",
   "bin": {
-    "zyctra": "./bin/zyctra.js"
+    "zyctra": "bin/zyctra.js"
   },
   "type": "module",
-  "keywords": ["ai", "cli", "assistant", "zyctra", "code", "terminal", "gpt", "claude-alternative"],
+  "keywords": [
+    "ai",
+    "cli",
+    "assistant",
+    "zyctra",
+    "code",
+    "terminal",
+    "gpt",
+    "claude-alternative"
+  ],
   "author": "Francis Shakur <contact@francisshakur.com> (https://francisshakur.com)",
   "license": "MIT",
   "homepage": "https://zyctra.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/francisdev90/zyctra-cli"
+    "url": "git+https://github.com/francisdev90/zyctra-cli.git"
   },
   "bugs": {
     "url": "https://zyctra.com",

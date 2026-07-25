@@ -1,0 +1,36 @@
+{
+  "name": "zyctra",
+  "version": "1.0.0",
+  "description": "Zyctra AI assistant for your terminal — AI that remembers you",
+  "bin": {
+    "zyctra": "./bin/zyctra.js"
+  },
+  "type": "module",
+  "keywords": ["ai", "cli", "assistant", "zyctra", "code", "terminal", "gpt", "claude-alternative"],
+  "author": "Francis Shakur <contact@francisshakur.com> (https://francisshakur.com)",
+  "license": "MIT",
+  "homepage": "https://zyctra.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/francisdev90/zyctra-cli"
+  },
+  "bugs": {
+    "url": "https://zyctra.com",
+    "email": "support@zyctra.com"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "conf": "^13.1.0",
+    "dotenv": "^16.4.5",
+    "inquirer": "^12.6.3",
+    "open": "^10.1.2",
+    "ora": "^8.2.0"
+  }
+}

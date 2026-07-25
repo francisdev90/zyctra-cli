@@ -20,6 +20,9 @@ function showWelcome(engine, email, plan) {
     `${chalk.white('zyctra fix file.js')}    ${chalk.gray('Fix bugs in a file')}\n` +
     `${chalk.white('zyctra explain file')}   ${chalk.gray('Explain a file')}\n` +
     `${chalk.white('zyctra commit')}         ${chalk.gray('Generate commit message')}\n` +
+    `${chalk.white('zyctra signup')}         ${chalk.gray('Create a new account')}\n` +
+    `${chalk.white('zyctra plans')}          ${chalk.gray('View plans and pricing')}\n` +
+    `${chalk.white('zyctra upgrade')}        ${chalk.gray('Upgrade your plan')}\n` +
     `${chalk.white('zyctra logout')}         ${chalk.gray('Logout')}\n\n` +
     `${chalk.gray('─'.repeat(cols - 6))}\n` +
     `${chalk.gray('Type your message below. Ctrl+C to exit.')}`
@@ -29,7 +32,7 @@ function showWelcome(engine, email, plan) {
     margin: 0,
     borderStyle: 'round',
     borderColor: 'cyan',
-    title: chalk.cyan('✸ Zyctra CLI v1.0.0'),
+    title: chalk.cyan('✸ Zyctra CLI v1.0.2'),
     titleAlignment: 'center',
     width: cols,
   }))

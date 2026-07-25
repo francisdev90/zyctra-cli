@@ -76,7 +76,10 @@ async function checkUsageLimits(token) {
     if (windowCount >= limits.window) {
       const oldest  = new Date(windowMsgs[0].created_at)
       const resetAt = new Date(oldest.getTime() + 3 * 60 * 60 * 1000)
-      return { allowed: false, message: `✗ You've used your 3-hour limit. Resets at ${formatTime(resetAt)}` }
+      const msg = plan === 'free'
+        ? `✗ Free plan limit reached · Resets at ${formatTime(resetAt)}`
+        : `✗ You've used your 3-hour limit. Resets at ${formatTime(resetAt)}`
+      return { allowed: false, plan, message: msg }
     }
 
     const { data: dailyMsgs } = await supabase
@@ -154,13 +157,18 @@ export async function getUsageStats(token) {
 }
 
 export async function askZyctra(messages) {
-  const token  = config.get('token')
-  const engine = config.get('engine') || 'vora'
+  const token = config.get('token')
+  const plan  = config.get('plan') || 'free'
+  const engine = plan === 'free' ? 'zev' : (config.get('engine') || 'vora')
 
   const { allowed, message } = await checkUsageLimits(token)
   if (!allowed) {
     console.log(chalk.red(`\n${message}`))
-    console.log(chalk.gray('  Upgrade at zyctra.com/plans\n'))
+    if (plan === 'free') {
+      console.log(chalk.gray('  Run: zyctra upgrade\n'))
+    } else {
+      console.log(chalk.gray('  Upgrade at zyctra.com/plans\n'))
+    }
     process.exit(1)
   }
 

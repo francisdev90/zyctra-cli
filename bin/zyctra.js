@@ -14,11 +14,13 @@ import { logout } from '../src/commands/logout.js'
 import { fix } from '../src/commands/fix.js'
 import { explain } from '../src/commands/explain.js'
 import { commit } from '../src/commands/commit.js'
+import { signup } from '../src/commands/signup.js'
+import { plans } from '../src/commands/plans.js'
 
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.0')
+  .version('1.0.2')
 
 program
   .command('login')
@@ -44,6 +46,21 @@ program
   .command('commit')
   .description('Generate a smart git commit message')
   .action(commit)
+
+program
+  .command('signup')
+  .description('Create a new Zyctra account')
+  .action(signup)
+
+program
+  .command('plans')
+  .description('View Zyctra plans and pricing')
+  .action(plans)
+
+program
+  .command('upgrade')
+  .description('Upgrade your Zyctra plan')
+  .action(plans)
 
 // Default: open interactive chat
 program

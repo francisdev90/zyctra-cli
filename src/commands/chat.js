@@ -5,6 +5,9 @@ import { config } from '../config.js'
 import { askZyctra, getUsageStats } from '../ai.js'
 import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
+import { searchWeb } from '../utils/webSearch.js'
+
+const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 
 const vis = (s) => s.replace(/\x1b\[[0-9;]*m/g, '').length
 const pad = (s, len) => s + ' '.repeat(Math.max(0, len - vis(s)))
@@ -44,7 +47,7 @@ function showWelcome(engine, email, plan) {
     '',
   ]
 
-  const VERSION   = 'Zyctra CLI v1.0.8'
+  const VERSION   = 'Zyctra CLI v1.0.9'
   const dashLeft  = Math.floor((cols - 2 - VERSION.length - 2) / 2)
   const dashRight = cols - 2 - VERSION.length - 2 - dashLeft
   const maxRows   = Math.max(leftLines.length, rightLines.length)
@@ -168,7 +171,18 @@ export async function chat(prompt) {
     const attachments   = []
     let enrichedContent = trimmed
 
-    // URLs first
+    // Web search intent detection
+    const needsSearch = SEARCH_KEYWORDS.some(k => trimmed.toLowerCase().includes(k))
+    if (needsSearch) {
+      console.log(chalk.cyan('\n  🔍 Searching the web...'))
+      const searchResults = await searchWeb(trimmed)
+      if (searchResults) {
+        enrichedContent += `\n\n[Web Search Results]\n${searchResults}`
+        console.log(chalk.gray('  ✓ Web search complete\n'))
+      }
+    }
+
+    // URLs
     const urlMatches = [...trimmed.matchAll(/(https?:\/\/[^\s]+|www\.[^\s]+)/g)].map(m => m[1])
     for (const url of urlMatches) {
       try {

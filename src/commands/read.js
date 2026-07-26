@@ -1,17 +1,13 @@
 import chalk from 'chalk'
+import inquirer from 'inquirer'
 import { askZyctra } from '../ai.js'
 import { config } from '../config.js'
 import { readFile } from '../utils/fileReader.js'
 
-export async function explain(file) {
+export async function read(file) {
   const token = config.get('token')
   if (!token) {
     console.log(chalk.yellow('\n⚠  Please login first: zyctra login\n'))
-    return
-  }
-
-  if (!file) {
-    console.log(chalk.red('\n✗ Please specify a file: zyctra explain <filename>\n'))
     return
   }
 
@@ -21,18 +17,23 @@ export async function explain(file) {
 
   try {
     const fileData = await readFile(file)
+    console.log(chalk.green(`✓ Loaded: ${fileData.name}\n`))
+
+    const { question } = await inquirer.prompt([{
+      type:    'input',
+      name:    'question',
+      message: 'What would you like to know about this file?',
+      default: fileData.type === 'image'
+        ? 'Describe this image in detail'
+        : 'Explain what this file does',
+    }])
+
+    const messages = [{ role: 'user', content: question }]
 
     if (fileData.type === 'image') {
-      const messages = [{
-        role:    'user',
-        content: 'Please explain what you see in this image in detail.',
-      }]
       await askZyctra(messages, engine, [fileData])
     } else {
-      const messages = [{
-        role:    'user',
-        content: `Please explain this file clearly. Describe what it does, how it works, and any important patterns or concepts used:\n\n${fileData.textContent}`,
-      }]
+      messages[0].content = `${question}\n\n${fileData.textContent}`
       await askZyctra(messages, engine)
     }
   } catch (error) {

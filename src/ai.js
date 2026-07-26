@@ -156,10 +156,10 @@ export async function getUsageStats(token) {
   }
 }
 
-export async function askZyctra(messages) {
+export async function askZyctra(messages, engine = 'vora', attachments = []) {
   const token = config.get('token')
   const plan  = config.get('plan') || 'free'
-  const engine = plan === 'free' ? 'zev' : (config.get('engine') || 'vora')
+  const effectiveEngine = plan === 'free' ? 'zev' : (config.get('engine') || engine)
 
   const { allowed, message } = await checkUsageLimits(token)
   if (!allowed) {
@@ -177,14 +177,33 @@ export async function askZyctra(messages) {
     spinner: { frames: ['✦', '✧', '✦', '✧'], interval: 300 },
   }).start()
 
+  // Build content blocks for the last user message when attachments are present
+  const buildContent = (text, atts) => {
+    if (!atts || atts.length === 0) return text
+    const blocks = []
+    for (const att of atts) {
+      if (att.type === 'image') {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: att.mediaType, data: att.data } })
+      }
+    }
+    blocks.push({ type: 'text', text })
+    return blocks
+  }
+
+  const lastMsg = messages[messages.length - 1]
+  const messagesWithAttachments = attachments.length > 0 ? [
+    ...messages.slice(0, -1),
+    { role: lastMsg.role, content: buildContent(lastMsg.content, attachments) },
+  ] : messages
+
   let fullResponse = ''
 
   try {
     const stream = getClient().messages.stream({
-      model:      MODEL_MAP[engine] ?? MODEL_MAP.vora,
+      model:      MODEL_MAP[effectiveEngine] ?? MODEL_MAP.vora,
       max_tokens: 4096,
       system:     SYSTEM_PROMPT,
-      messages,
+      messages:   messagesWithAttachments,
     })
 
     spinner.stop()
@@ -200,7 +219,7 @@ export async function askZyctra(messages) {
     process.stdout.write('\n\n')
 
     const userId = config.get('userId') || getUserIdFromToken(token)
-    await recordUsage(token, userId, engine)
+    await recordUsage(token, userId, effectiveEngine)
 
     return fullResponse
 

@@ -13,6 +13,7 @@ import { login } from '../src/commands/login.js'
 import { logout } from '../src/commands/logout.js'
 import { fix } from '../src/commands/fix.js'
 import { explain } from '../src/commands/explain.js'
+import { read } from '../src/commands/read.js'
 import { commit } from '../src/commands/commit.js'
 import { signup } from '../src/commands/signup.js'
 import { plans } from '../src/commands/plans.js'
@@ -20,7 +21,7 @@ import { plans } from '../src/commands/plans.js'
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.2')
+  .version('1.0.3')
 
 program
   .command('login')
@@ -51,6 +52,11 @@ program
   .command('signup')
   .description('Create a new Zyctra account')
   .action(signup)
+
+program
+  .command('read <file>')
+  .description('Read and analyze any file — code, image, or PDF')
+  .action(read)
 
 program
   .command('plans')

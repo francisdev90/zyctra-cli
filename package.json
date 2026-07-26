@@ -1,6 +1,6 @@
 {
   "name": "zyctra",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Zyctra AI assistant for your terminal — AI that remembers you",
   "bin": {
     "zyctra": "bin/zyctra.js"
@@ -40,6 +40,7 @@
     "dotenv": "^16.4.5",
     "inquirer": "^12.6.3",
     "open": "^10.1.2",
-    "ora": "^8.2.0"
+    "ora": "^8.2.0",
+    "pdf-parse": "^2.4.5"
   }
 }

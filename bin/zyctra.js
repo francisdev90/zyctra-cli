@@ -19,11 +19,12 @@ import { signup } from '../src/commands/signup.js'
 import { plans } from '../src/commands/plans.js'
 import { scan } from '../src/commands/scan.js'
 import { write } from '../src/commands/write.js'
+import { editFile } from '../src/commands/edit.js'
 
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.6')
+  .version('1.0.8')
 
 program
   .command('login')
@@ -82,6 +83,11 @@ program
   .command('upgrade')
   .description('Upgrade your Zyctra plan')
   .action(plans)
+
+program
+  .command('edit <file> [instruction]')
+  .description('Edit a file — shows a diff preview and asks before applying changes')
+  .action(editFile)
 
 // Default: open interactive chat
 program

@@ -1,46 +1,96 @@
 import readline from 'readline'
+import fs from 'fs'
 import chalk from 'chalk'
-import boxen from 'boxen'
 import { config } from '../config.js'
 import { askZyctra, getUsageStats } from '../ai.js'
+import { readFile } from '../utils/fileReader.js'
+import { readUrl } from '../utils/urlReader.js'
+
+const vis = (s) => s.replace(/\x1b\[[0-9;]*m/g, '').length
+const pad = (s, len) => s + ' '.repeat(Math.max(0, len - vis(s)))
 
 function showWelcome(engine, email, plan) {
   const isFounder   = config.get('isFounder') || email === 'henryfrancis238@gmail.com'
   const engineLabel = isFounder ? 'Talyn (Max)' : engine.charAt(0).toUpperCase() + engine.slice(1)
   const planLabel   = plan.charAt(0).toUpperCase() + plan.slice(1)
-  const cols        = process.stdout.columns || 80
+  const cols        = Math.min(process.stdout.columns || 80, 120)
 
-  const content =
-    `${chalk.cyan('✸')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✸')}` +
-    ' '.repeat(Math.max(0, cols - 40)) +
-    `${chalk.gray('zyctra.com')}\n` +
-    `${chalk.gray('AI that remembers you')}  ·  ` +
-    `${chalk.gray('Engine')} · ${chalk.cyan(engineLabel)} · ${chalk.gray(email)} · ${chalk.cyan(planLabel)}\n` +
-    `${chalk.gray('─'.repeat(cols - 4))}\n` +
-    `${chalk.white('zyctra "question"')}          ${chalk.gray('Ask anything')}\n` +
-    `${chalk.white('zyctra fix file.js')}         ${chalk.gray('Fix bugs in a file')}\n` +
-    `${chalk.white('zyctra fix file.js --write')} ${chalk.gray('Auto-fix and save file')}\n` +
-    `${chalk.white('zyctra explain file')}        ${chalk.gray('Explain a file')}\n` +
-    `${chalk.white('zyctra read file.png')}       ${chalk.gray('Analyze any file or image')}\n` +
-    `${chalk.white('zyctra read img.png --fix')}  ${chalk.gray('Generate code from image')}\n` +
-    `${chalk.white('zyctra scan [folder]')}       ${chalk.gray('Scan entire folder for issues')}\n` +
-    `${chalk.white('zyctra write "prompt"')}      ${chalk.gray('Generate and save new file')}\n` +
-    `${chalk.white('zyctra commit')}              ${chalk.gray('Generate commit message')}\n` +
-    `${chalk.white('zyctra plans')}               ${chalk.gray('View plans and pricing')}\n` +
-    `${chalk.white('zyctra upgrade')}             ${chalk.gray('Upgrade your plan')}\n` +
-    `${chalk.white('zyctra logout')}              ${chalk.gray('Logout')}\n` +
-    `${chalk.gray('─'.repeat(cols - 4))}\n` +
-    `${chalk.gray('Type your message below. Ctrl+C to exit.')}`
+  const innerWidth = cols - 4
+  const leftWidth  = Math.floor(innerWidth * 0.42)
+  const rightWidth = innerWidth - leftWidth - 3
 
-  console.log(boxen(content, {
-    padding: { top: 0, bottom: 0, left: 1, right: 1 },
-    margin: 0,
-    borderStyle: 'round',
-    borderColor: 'cyan',
-    title: chalk.cyan('✸ Zyctra CLI v1.0.6'),
-    titleAlignment: 'center',
-    width: cols,
-  }))
+  const leftLines = [
+    '',
+    `  ${chalk.cyan('✸')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✸')}`,
+    '',
+    `  ${chalk.gray('Engine')}  · ${chalk.cyan(engineLabel)}`,
+    `  ${chalk.gray(email)}`,
+    `  ${chalk.gray('Plan')}    · ${chalk.cyan(planLabel)}`,
+    '',
+    `  ${chalk.gray('zyctra.com')}`,
+    '',
+  ]
+
+  const rightLines = [
+    '',
+    chalk.bold.white('Tips for getting started'),
+    chalk.gray('Paste any file path in chat to read it,'),
+    chalk.gray('ask Zyctra to edit, fix, or explain.'),
+    '',
+    chalk.bold.white("What's new"),
+    `${chalk.cyan('•')} ${chalk.gray('Read & edit files directly in chat')}`,
+    `${chalk.cyan('•')} ${chalk.gray('Reads screenshots and images too')}`,
+    `${chalk.cyan('•')} ${chalk.gray('Run: zyctra edit <file>')}`,
+    '',
+  ]
+
+  const VERSION   = 'Zyctra CLI v1.0.8'
+  const dashLeft  = Math.floor((cols - 2 - VERSION.length - 2) / 2)
+  const dashRight = cols - 2 - VERSION.length - 2 - dashLeft
+  const maxRows   = Math.max(leftLines.length, rightLines.length)
+
+  const out = []
+
+  out.push(
+    chalk.cyan('╭') +
+    chalk.cyan('─'.repeat(dashLeft)) +
+    ' ' + chalk.bold.white(VERSION) + ' ' +
+    chalk.cyan('─'.repeat(dashRight)) +
+    chalk.cyan('╮')
+  )
+
+  for (let i = 0; i < maxRows; i++) {
+    const l = pad(leftLines[i] ?? '', leftWidth)
+    const r = pad(rightLines[i] ?? '', rightWidth)
+    out.push(
+      chalk.cyan('│') + ' ' + l + ' ' + chalk.cyan('│') + ' ' + r + ' ' + chalk.cyan('│')
+    )
+  }
+
+  out.push(
+    chalk.cyan('╰') +
+    chalk.cyan('─'.repeat(leftWidth + 2)) +
+    chalk.cyan('┴') +
+    chalk.cyan('─'.repeat(rightWidth + 2)) +
+    chalk.cyan('╯')
+  )
+
+  console.log(out.join('\n'))
+}
+
+const FILE_EXT_RE = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
+
+function extractFilePaths(text) {
+  const found = []
+  const re = /(?:^|[\s"'`])(\.{0,2}[/\\]?[\w\-./ \\]+\.\w+)/g
+  let m
+  while ((m = re.exec(text)) !== null) {
+    const p = m[1].trim()
+    if (FILE_EXT_RE.test(p) && fs.existsSync(p)) {
+      found.push(p)
+    }
+  }
+  return [...new Set(found)]
 }
 
 export async function chat(prompt) {
@@ -59,19 +109,14 @@ export async function chat(prompt) {
 
   const messages = []
 
-  // One-shot mode: prompt passed as CLI argument
   if (prompt) {
     messages.push({ role: 'user', content: prompt })
-    console.log(chalk.white(`You: ${prompt}`))
+    console.log(chalk.white(`\nYou: ${prompt}`))
     await askZyctra(messages)
     return
   }
 
-  // Interactive mode
-  const rl = readline.createInterface({
-    input:  process.stdin,
-    output: process.stdout,
-  })
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 
   rl.on('SIGINT', () => {
     console.log(chalk.cyan('\n\n✦ Goodbye!\n'))
@@ -79,8 +124,7 @@ export async function chat(prompt) {
     process.exit(0)
   })
 
-  const divider = () => console.log(chalk.gray('─'.repeat(process.stdout.columns || 80)))
-
+  const divider   = () => console.log(chalk.gray('─'.repeat(process.stdout.columns || 80)))
   const showPrompt = () => {
     divider()
     rl.setPrompt(chalk.cyan('❯ '))
@@ -89,12 +133,7 @@ export async function chat(prompt) {
 
   rl.on('line', async (input) => {
     const trimmed = input.trim()
-
-    if (!trimmed) {
-      rl.setPrompt(chalk.cyan('❯ '))
-      rl.prompt()
-      return
-    }
+    if (!trimmed) { rl.prompt(); return }
 
     if (['exit', 'quit', 'q'].includes(trimmed.toLowerCase())) {
       console.log(chalk.cyan('\n✦ Goodbye!\n'))
@@ -108,29 +147,60 @@ export async function chat(prompt) {
 
     if (!isFounder) {
       const { percentage, resetTime } = await getUsageStats(token)
-
       if (percentage !== undefined) {
         if (percentage >= 100) {
-          const limitText = `✗ Usage limit reached · Resets at ${resetTime} · Upgrade at zyctra.com/plans`
-          const spaces = ' '.repeat(Math.max(0, termWidth - limitText.length))
-          console.log(spaces + chalk.red(limitText))
+          const t = `✗ Usage limit reached · Resets at ${resetTime} · Upgrade at zyctra.com/plans`
+          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.red(t))
           rl.setPrompt(chalk.cyan('❯ '))
           rl.prompt()
           return
         } else if (percentage >= 80) {
-          const warningText = `⚠ ${percentage}% used · Resets at ${resetTime}`
-          const spaces = ' '.repeat(Math.max(0, termWidth - warningText.length))
-          console.log(spaces + chalk.yellow(warningText))
+          const t = `⚠ ${percentage}% used · Resets at ${resetTime}`
+          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.yellow(t))
         } else {
-          const infoText = `${percentage}% used · Resets at ${resetTime}`
-          const spaces = ' '.repeat(Math.max(0, termWidth - infoText.length))
-          console.log(spaces + chalk.gray(infoText))
+          const t = `${percentage}% used · Resets at ${resetTime}`
+          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.gray(t))
         }
       }
     }
 
-    messages.push({ role: 'user', content: trimmed })
-    const response = await askZyctra(messages)
+    // Auto-detect URLs and file paths in the message and load them
+    const attachments   = []
+    let enrichedContent = trimmed
+
+    // URLs first
+    const urlMatches = [...trimmed.matchAll(/(https?:\/\/[^\s]+|www\.[^\s]+)/g)].map(m => m[1])
+    for (const url of urlMatches) {
+      try {
+        console.log(chalk.cyan(`\n  Fetching ${url}...`))
+        const urlData = await readUrl(url)
+        enrichedContent += `\n\n[Page: ${urlData.title}]\n${urlData.content}`
+        console.log(chalk.gray(`  ✓ Loaded: ${urlData.title || url}\n`))
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ Could not fetch ${url}: ${err.message}\n`))
+      }
+    }
+
+    // File paths
+    const filePaths = extractFilePaths(trimmed)
+    for (const filePath of filePaths) {
+      try {
+        console.log(chalk.cyan(`\n  Reading ${filePath}...`))
+        const fileData = await readFile(filePath)
+        if (fileData.type === 'image') {
+          attachments.push(fileData)
+          console.log(chalk.gray(`  ✓ Loaded image: ${filePath}\n`))
+        } else {
+          enrichedContent += `\n\n${fileData.textContent}`
+          console.log(chalk.gray(`  ✓ Loaded ${filePath} (${fileData.content.split('\n').length} lines)\n`))
+        }
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ Could not read ${filePath}: ${err.message}\n`))
+      }
+    }
+
+    messages.push({ role: 'user', content: enrichedContent })
+    const response = await askZyctra(messages, engine, attachments)
 
     if (response) {
       messages.push({ role: 'assistant', content: response })

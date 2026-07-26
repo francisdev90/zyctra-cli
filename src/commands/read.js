@@ -5,8 +5,9 @@ import inquirer from 'inquirer'
 import { askZyctra } from '../ai.js'
 import { config } from '../config.js'
 import { readFile } from '../utils/fileReader.js'
+import { readUrl, isUrl } from '../utils/urlReader.js'
 
-export async function read(file, options = {}) {
+export async function read(target, options = {}) {
   const token = config.get('token')
   if (!token) {
     console.log(chalk.yellow('\n⚠  Please login first: zyctra login\n'))
@@ -15,11 +16,38 @@ export async function read(file, options = {}) {
 
   const engine = config.get('engine') || 'vora'
 
-  console.log(chalk.cyan(`\n✦ Reading ${file}...\n`))
+  // ── URL mode ────────────────────────────────────────────────────────────
+  if (isUrl(target)) {
+    console.log(chalk.cyan(`\n  Reading ${target}...\n`))
+    try {
+      const urlData = await readUrl(target)
+      console.log(chalk.green(`  ✓ Loaded: ${urlData.title || target}\n`))
+
+      const { question } = await inquirer.prompt([{
+        type:    'input',
+        name:    'question',
+        message: 'What would you like to know about this page?',
+        default: 'Summarize this page',
+      }])
+
+      const messages = [{
+        role:    'user',
+        content: `${question}\n\n${urlData.content}`,
+      }]
+
+      await askZyctra(messages, engine)
+    } catch (error) {
+      console.log(chalk.red(`\n✗ ${error.message}\n`))
+    }
+    return
+  }
+
+  // ── File mode ────────────────────────────────────────────────────────────
+  console.log(chalk.cyan(`\n  Reading ${target}...\n`))
 
   try {
-    const fileData = await readFile(file)
-    console.log(chalk.green(`✓ Loaded: ${fileData.name}\n`))
+    const fileData = await readFile(target)
+    console.log(chalk.green(`  ✓ Loaded: ${fileData.name}\n`))
 
     if (options.fix) {
       const messages = fileData.type === 'image'
@@ -46,7 +74,7 @@ export async function read(file, options = {}) {
         if (filename.trim()) {
           const cleaned = response.replace(/^```[\w]*\r?\n?/, '').replace(/\r?\n?```$/, '').trim()
           fs.writeFileSync(path.resolve(filename.trim()), cleaned + '\n')
-          console.log(chalk.green(`✓ Saved to: ${filename.trim()}\n`))
+          console.log(chalk.green(`  ✓ Saved to: ${filename.trim()}\n`))
         }
       }
       return

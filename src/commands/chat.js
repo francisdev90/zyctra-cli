@@ -5,7 +5,8 @@ import { config } from '../config.js'
 import { askZyctra, getUsageStats } from '../ai.js'
 
 function showWelcome(engine, email, plan) {
-  const engineLabel = engine.charAt(0).toUpperCase() + engine.slice(1)
+  const isFounder   = config.get('isFounder') || email === 'henryfrancis238@gmail.com'
+  const engineLabel = isFounder ? 'Talyn (Max)' : engine.charAt(0).toUpperCase() + engine.slice(1)
   const planLabel   = plan.charAt(0).toUpperCase() + plan.slice(1)
   const cols        = process.stdout.columns || 80
 
@@ -33,7 +34,7 @@ function showWelcome(engine, email, plan) {
     margin: 0,
     borderStyle: 'round',
     borderColor: 'cyan',
-    title: chalk.cyan('✸ Zyctra CLI v1.0.3'),
+    title: chalk.cyan('✸ Zyctra CLI v1.0.4'),
     titleAlignment: 'center',
     width: cols,
   }))

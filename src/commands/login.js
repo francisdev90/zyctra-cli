@@ -35,22 +35,16 @@ export async function login() {
     .eq('email', email)
     .single()
 
-  const plan = userData?.role === 'founder' ? 'founder' : (userData?.plan || 'free')
-
-  const engineMap = {
-    free:    'zev',
-    pro:     'vora',
-    premium: 'talyn',
-    founder: 'talyn',
-  }
-  const engine = engineMap[plan] || 'vora'
+  const isFounder = userData?.role === 'founder' || email === 'henryfrancis238@gmail.com'
+  const plan      = isFounder ? 'founder' : (userData?.plan || 'free')
+  const engine    = isFounder ? 'talyn' : ({ free: 'zev', pro: 'vora', premium: 'talyn' }[plan] || 'vora')
 
   config.set('token', data.session.access_token)
   config.set('email', email)
   config.set('plan', plan)
   config.set('engine', engine)
   config.set('userId', userData?.id)
-  config.set('isFounder', userData?.role === 'founder')
+  config.set('isFounder', isFounder)
 
   console.log(chalk.green('\n✓ Logged in successfully!'))
   console.log(chalk.cyan(`✸ Plan: ${plan} · Engine: ${engine}\n`))

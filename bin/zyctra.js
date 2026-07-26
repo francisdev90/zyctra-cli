@@ -21,7 +21,7 @@ import { plans } from '../src/commands/plans.js'
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.3')
+  .version('1.0.4')
 
 program
   .command('login')

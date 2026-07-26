@@ -157,9 +157,10 @@ export async function getUsageStats(token) {
 }
 
 export async function askZyctra(messages, engine = 'vora', attachments = []) {
-  const token = config.get('token')
-  const plan  = config.get('plan') || 'free'
-  const effectiveEngine = plan === 'free' ? 'zev' : (config.get('engine') || engine)
+  const token     = config.get('token')
+  const plan      = config.get('plan') || 'free'
+  const isFounder = config.get('isFounder') || config.get('email') === 'henryfrancis238@gmail.com'
+  const effectiveEngine = isFounder ? 'talyn' : (plan === 'free' ? 'zev' : (config.get('engine') || engine))
 
   const { allowed, message } = await checkUsageLimits(token)
   if (!allowed) {

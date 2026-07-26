@@ -156,7 +156,11 @@ export async function getUsageStats(token) {
   }
 }
 
-export async function askZyctra(messages, engine = 'vora', attachments = []) {
+export async function askZyctraAndReturn(messages, engine = 'vora', attachments = []) {
+  return askZyctra(messages, engine, attachments, { silent: true })
+}
+
+export async function askZyctra(messages, engine = 'vora', attachments = [], options = {}) {
   const token     = config.get('token')
   const plan      = config.get('plan') || 'free'
   const isFounder = config.get('isFounder') || config.get('email') === 'henryfrancis238@gmail.com'
@@ -208,16 +212,16 @@ export async function askZyctra(messages, engine = 'vora', attachments = []) {
     })
 
     spinner.stop()
-    process.stdout.write(chalk.cyan('Zyctra: '))
+    if (!options.silent) process.stdout.write(chalk.cyan('Zyctra: '))
 
     for await (const chunk of stream) {
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        process.stdout.write(chunk.delta.text)
+        if (!options.silent) process.stdout.write(chunk.delta.text)
         fullResponse += chunk.delta.text
       }
     }
 
-    process.stdout.write('\n\n')
+    if (!options.silent) process.stdout.write('\n\n')
 
     const userId = config.get('userId') || getUserIdFromToken(token)
     await recordUsage(token, userId, effectiveEngine)

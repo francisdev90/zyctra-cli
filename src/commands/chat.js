@@ -17,15 +17,18 @@ function showWelcome(engine, email, plan) {
     `${chalk.gray('AI that remembers you')}\n\n` +
     `${chalk.gray('Engine')} · ${chalk.cyan(engineLabel)} · ${chalk.gray(email)} · ${chalk.cyan(planLabel)}\n\n` +
     `${chalk.gray('─'.repeat(cols - 6))}\n\n` +
-    `${chalk.white('zyctra "question"')}     ${chalk.gray('Ask anything')}\n` +
-    `${chalk.white('zyctra fix file.js')}    ${chalk.gray('Fix bugs in a file')}\n` +
-    `${chalk.white('zyctra explain file')}   ${chalk.gray('Explain a file')}\n` +
-    `${chalk.white('zyctra read file.png')}  ${chalk.gray('Read and analyze any file')}\n` +
-    `${chalk.white('zyctra commit')}         ${chalk.gray('Generate commit message')}\n` +
-    `${chalk.white('zyctra signup')}         ${chalk.gray('Create a new account')}\n` +
-    `${chalk.white('zyctra plans')}          ${chalk.gray('View plans and pricing')}\n` +
-    `${chalk.white('zyctra upgrade')}        ${chalk.gray('Upgrade your plan')}\n` +
-    `${chalk.white('zyctra logout')}         ${chalk.gray('Logout')}\n\n` +
+    `${chalk.white('zyctra "question"')}          ${chalk.gray('Ask anything')}\n` +
+    `${chalk.white('zyctra fix file.js')}         ${chalk.gray('Fix bugs in a file')}\n` +
+    `${chalk.white('zyctra fix file.js --write')} ${chalk.gray('Auto-fix and save file')}\n` +
+    `${chalk.white('zyctra explain file')}        ${chalk.gray('Explain a file')}\n` +
+    `${chalk.white('zyctra read file.png')}       ${chalk.gray('Analyze any file or image')}\n` +
+    `${chalk.white('zyctra read img.png --fix')}  ${chalk.gray('Generate code from image')}\n` +
+    `${chalk.white('zyctra scan [folder]')}       ${chalk.gray('Scan entire folder for issues')}\n` +
+    `${chalk.white('zyctra write "prompt"')}      ${chalk.gray('Generate and save new file')}\n` +
+    `${chalk.white('zyctra commit')}              ${chalk.gray('Generate commit message')}\n` +
+    `${chalk.white('zyctra plans')}               ${chalk.gray('View plans and pricing')}\n` +
+    `${chalk.white('zyctra upgrade')}             ${chalk.gray('Upgrade your plan')}\n` +
+    `${chalk.white('zyctra logout')}              ${chalk.gray('Logout')}\n\n` +
     `${chalk.gray('─'.repeat(cols - 6))}\n` +
     `${chalk.gray('Type your message below. Ctrl+C to exit.')}`
 
@@ -34,7 +37,7 @@ function showWelcome(engine, email, plan) {
     margin: 0,
     borderStyle: 'round',
     borderColor: 'cyan',
-    title: chalk.cyan('✸ Zyctra CLI v1.0.4'),
+    title: chalk.cyan('✸ Zyctra CLI v1.0.6'),
     titleAlignment: 'center',
     width: cols,
   }))

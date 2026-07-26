@@ -17,11 +17,13 @@ import { read } from '../src/commands/read.js'
 import { commit } from '../src/commands/commit.js'
 import { signup } from '../src/commands/signup.js'
 import { plans } from '../src/commands/plans.js'
+import { scan } from '../src/commands/scan.js'
+import { write } from '../src/commands/write.js'
 
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.4')
+  .version('1.0.6')
 
 program
   .command('login')
@@ -34,8 +36,9 @@ program
   .action(logout)
 
 program
-  .command('fix [file]')
-  .description('Scan and fix bugs in a file or current directory')
+  .command('fix <file>')
+  .description('Scan and fix bugs in a file')
+  .option('--write', 'Automatically write the fix back to the file')
   .action(fix)
 
 program
@@ -56,7 +59,19 @@ program
 program
   .command('read <file>')
   .description('Read and analyze any file — code, image, or PDF')
+  .option('--fix', 'Generate code from the file or image')
   .action(read)
+
+program
+  .command('scan [folder]')
+  .description('Scan and analyze an entire folder of code')
+  .action(scan)
+
+program
+  .command('write <prompt>')
+  .description('Generate and save a new file from a prompt')
+  .option('--output <file>', 'Output file path')
+  .action(write)
 
 program
   .command('plans')

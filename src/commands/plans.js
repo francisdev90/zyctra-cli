@@ -30,7 +30,7 @@ export async function plans() {
 
   if (action === 'upgrade') {
     console.log(chalk.cyan('\n✸ Opening zyctra.com/plans in your browser...\n'))
-    await open('https://zyctra-gamma.vercel.app/plans')
+    await open('https://zyctra.com/plans')
     console.log(chalk.gray('Complete your payment in the browser.'))
     console.log(chalk.gray('Your plan updates automatically after payment.\n'))
   }

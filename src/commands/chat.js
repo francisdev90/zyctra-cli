@@ -14,9 +14,9 @@ function showWelcome(engine, email, plan) {
     `${chalk.cyan('✸')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✸')}` +
     ' '.repeat(Math.max(0, cols - 40)) +
     `${chalk.gray('zyctra.com')}\n` +
-    `${chalk.gray('AI that remembers you')}\n\n` +
-    `${chalk.gray('Engine')} · ${chalk.cyan(engineLabel)} · ${chalk.gray(email)} · ${chalk.cyan(planLabel)}\n\n` +
-    `${chalk.gray('─'.repeat(cols - 6))}\n\n` +
+    `${chalk.gray('AI that remembers you')}  ·  ` +
+    `${chalk.gray('Engine')} · ${chalk.cyan(engineLabel)} · ${chalk.gray(email)} · ${chalk.cyan(planLabel)}\n` +
+    `${chalk.gray('─'.repeat(cols - 4))}\n` +
     `${chalk.white('zyctra "question"')}          ${chalk.gray('Ask anything')}\n` +
     `${chalk.white('zyctra fix file.js')}         ${chalk.gray('Fix bugs in a file')}\n` +
     `${chalk.white('zyctra fix file.js --write')} ${chalk.gray('Auto-fix and save file')}\n` +
@@ -28,12 +28,12 @@ function showWelcome(engine, email, plan) {
     `${chalk.white('zyctra commit')}              ${chalk.gray('Generate commit message')}\n` +
     `${chalk.white('zyctra plans')}               ${chalk.gray('View plans and pricing')}\n` +
     `${chalk.white('zyctra upgrade')}             ${chalk.gray('Upgrade your plan')}\n` +
-    `${chalk.white('zyctra logout')}              ${chalk.gray('Logout')}\n\n` +
-    `${chalk.gray('─'.repeat(cols - 6))}\n` +
+    `${chalk.white('zyctra logout')}              ${chalk.gray('Logout')}\n` +
+    `${chalk.gray('─'.repeat(cols - 4))}\n` +
     `${chalk.gray('Type your message below. Ctrl+C to exit.')}`
 
   console.log(boxen(content, {
-    padding: 1,
+    padding: { top: 0, bottom: 0, left: 1, right: 1 },
     margin: 0,
     borderStyle: 'round',
     borderColor: 'cyan',

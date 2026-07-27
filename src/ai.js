@@ -5,9 +5,9 @@ import ora from 'ora'
 import { config } from './config.js'
 
 const PLAN_LIMITS = {
-  free:    { window: 5,        daily: 15  },
-  pro:     { window: 20,       daily: 60  },
-  premium: { window: 50,       daily: 150 },
+  free:    { window: 10, daily: 30  },
+  pro:     { window: 30, daily: 90  },
+  premium: { window: 60, daily: 180 },
   founder: { window: Infinity, daily: Infinity },
 }
 

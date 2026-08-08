@@ -79,25 +79,31 @@ export async function syncUserProfile(token) {
 export async function getUsageStats(token) {
   if (!token || config.get('isFounder')) return {}
   try {
-    const supabase  = getSupabase(token)
-    const userId    = config.get('userId') || getUserIdFromToken(token)
+    const supabase = getSupabase(token)
+    const userId   = config.get('userId') || getUserIdFromToken(token)
     if (!userId) return {}
     const plan   = config.get('plan') || 'go'
     const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.go
     if (limits.window === Infinity) return {}
-    const now            = new Date()
-    const windowStart    = new Date(now - limits.windowHours * 60 * 60 * 1000).toISOString()
-    const { data: msgs } = await supabase
-      .from('usage').select('created_at')
-      .eq('user_id', userId).eq('type', 'message')
-      .gte('created_at', windowStart).order('created_at', { ascending: true })
+    const now         = new Date()
+    const windowStart = new Date(now - limits.windowHours * 60 * 60 * 1000).toISOString()
+    const [usageRes, topupRes] = await Promise.all([
+      supabase.from('usage').select('created_at')
+        .eq('user_id', userId).eq('type', 'message')
+        .gte('created_at', windowStart).order('created_at', { ascending: true }),
+      supabase.from('topup_balance').select('balance')
+        .eq('user_id', userId).maybeSingle(),
+    ])
+    const msgs       = usageRes.data
     const count      = msgs?.length ?? 0
     const percentage = Math.min(100, Math.round((count / limits.window) * 100))
+    const hasCredits = (topupRes.data?.balance ?? 0) > 0
+    const blocked    = percentage >= 100 && !hasCredits
     const oldest     = msgs?.[0]
     const resetAt    = oldest
       ? new Date(new Date(oldest.created_at).getTime() + limits.windowHours * 60 * 60 * 1000)
       : new Date(now.getTime() + limits.windowHours * 60 * 60 * 1000)
-    return { percentage, resetTime: formatTime(resetAt) }
+    return { percentage, resetTime: formatTime(resetAt), blocked }
   } catch {
     return {}
   }
@@ -143,7 +149,8 @@ export async function askZyctra(messages, _engine, attachments = [], options = {
         console.log(chalk.red(`\n✗ ${errMsg}`))
         console.log(chalk.gray('  Upgrade at zyctra.com/plans\n'))
       } else if (res.status === 429) {
-        console.log(chalk.yellow(`\n⚠  ${errMsg}\n`))
+        console.log(chalk.yellow(`\n⚠  ${errMsg}`))
+        console.log(chalk.gray('  Your Zyctra app and CLI share the same usage pool.\n'))
       } else {
         console.log(chalk.red(`\n✗ ${errMsg}\n`))
       }

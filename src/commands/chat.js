@@ -7,18 +7,16 @@ import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 
-const VERSION = 'v1.1.6'
+const VERSION = 'v1.1.7'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
 const ENGINE_LABEL    = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }
 
-// Strip ANSI escape codes to get visual width
 const vis = (s) => s.replace(/\x1b\[[0-9;]*m/g, '').length
 const pad = (s, len) => s + ' '.repeat(Math.max(0, len - vis(s)))
 
 function showWelcome(engine, email, plan) {
-  const isFounder   = config.get('isFounder') || false
   const engineLabel = ENGINE_LABEL[engine] || engine
   const planLabel   = plan.charAt(0).toUpperCase() + plan.slice(1)
   const cols        = process.stdout.columns || 80
@@ -28,7 +26,7 @@ function showWelcome(engine, email, plan) {
 
   const leftLines = [
     '',
-    `  ${chalk.cyan('◆')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('◆')}`,
+    `  ${chalk.cyan('✴')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✴')}`,
     '',
     `  ${chalk.gray('Engine')}  · ${chalk.cyan(engineLabel)}`,
     `  ${chalk.gray(email)}`,
@@ -126,8 +124,6 @@ export async function chat(prompt) {
     return
   }
 
-  // Always sync engine + plan from DB on session start
-  // so it matches what the user has set in the app — no re-login needed
   await syncUserProfile(token)
 
   const email     = config.get('email')     || ''
@@ -137,16 +133,9 @@ export async function chat(prompt) {
 
   showWelcome(engine, email, plan)
 
-  // Show a one-time warning if approaching the usage limit
+  let lastUsage = null
   if (!isFounder) {
-    const { percentage, resetTime } = await getUsageStats(token)
-    if (percentage >= 80) {
-      const termWidth = process.stdout.columns || 80
-      const t = percentage >= 100
-        ? `⚠ Limit reached · Resets at ${resetTime} · zyctra.com/plans`
-        : `⚠ ${percentage}% used · Resets at ${resetTime}`
-      console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.yellow(t))
-    }
+    lastUsage = await getUsageStats(token)
   }
 
   const messages = []
@@ -162,14 +151,26 @@ export async function chat(prompt) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 
   rl.on('SIGINT', () => {
-    console.log(chalk.cyan('\n\n✦ Goodbye!\n'))
+    console.log(chalk.cyan('\n\n✴ Goodbye!\n'))
     rl.close()
     process.exit(0)
   })
 
-  const divider    = () => process.stdout.write(chalk.gray('─'.repeat(process.stdout.columns || 80)) + '\n')
+  const divider = () => process.stdout.write(chalk.gray('─'.repeat(process.stdout.columns || 80)) + '\n')
+
   const showPrompt = () => {
     divider()
+    if (!isFounder && lastUsage) {
+      const { percentage, resetTime, blocked } = lastUsage
+      if (blocked) {
+        console.log(chalk.red(`  ⊘ Limit reached · Resets at ${resetTime} · Add credits or upgrade at zyctra.com/plans`))
+        console.log(chalk.gray('  Your Zyctra app and CLI share the same usage pool.'))
+      } else if (percentage >= 90) {
+        console.log(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime} · App + CLI share this limit`))
+      } else if (percentage >= 80) {
+        console.log(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime}`))
+      }
+    }
     rl.setPrompt(chalk.cyan('❯ '))
     rl.prompt()
   }
@@ -215,7 +216,7 @@ export async function chat(prompt) {
       }
 
       if (cmd === '/exit' || cmd === '/quit') {
-        console.log(chalk.cyan('\n✦ Goodbye!\n'))
+        console.log(chalk.cyan('\n✴ Goodbye!\n'))
         rl.close()
         return
       }
@@ -229,8 +230,8 @@ export async function chat(prompt) {
     // ── Regular message ─────────────────────────────────────────────
     divider()
 
-    const attachments    = []
-    let enrichedContent  = trimmed
+    const attachments   = []
+    let enrichedContent = trimmed
 
     // Web search
     const needsSearch = SEARCH_KEYWORDS.some(k => trimmed.toLowerCase().includes(k))
@@ -273,6 +274,11 @@ export async function chat(prompt) {
     const response = await askZyctra(messages, engine, attachments)
 
     if (response) messages.push({ role: 'assistant', content: response })
+
+    // Refresh usage after each response so the status above ❯ stays current
+    if (!isFounder) {
+      lastUsage = await getUsageStats(token)
+    }
 
     showPrompt()
   })

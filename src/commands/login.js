@@ -46,8 +46,15 @@ export async function login() {
     return
   }
 
-  // Always use whatever engine the user has set in the app — no exceptions
-  const engine = userData?.preferred_engine || 'vora'
+  const ALLOWED_ENGINES = {
+    go:      ['zev', 'vora'],
+    pro:     ['zev', 'vora'],
+    premium: ['zev', 'vora', 'talyn'],
+    founder: ['zev', 'vora', 'talyn'],
+  }
+  const rawEngine  = userData?.preferred_engine || 'vora'
+  const allowed    = isFounder ? ['zev', 'vora', 'talyn'] : (ALLOWED_ENGINES[plan] || ['zev', 'vora'])
+  const engine     = allowed.includes(rawEngine) ? rawEngine : allowed[allowed.length - 1]
 
   config.set('token',     data.session.access_token)
   config.set('email',     email)

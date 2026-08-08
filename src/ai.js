@@ -14,7 +14,22 @@ const PLAN_LIMITS = {
   founder: { window: Infinity, daily: Infinity, windowHours: 3 },
 }
 
-const ENGINE_LABEL = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }
+const ENGINE_LABEL   = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }
+const ALLOWED_ENGINES = {
+  free:    ['zev'],
+  go:      ['zev', 'vora'],
+  pro:     ['zev', 'vora'],
+  premium: ['zev', 'vora', 'talyn'],
+  founder: ['zev', 'vora', 'talyn'],
+}
+
+function resolveEngine(preferredEngine, plan, isFounder) {
+  const engine  = preferredEngine || 'vora'
+  if (isFounder) return engine
+  const allowed = ALLOWED_ENGINES[plan] || ['zev', 'vora']
+  // If the user's preferred engine isn't available on their plan, use the best allowed
+  return allowed.includes(engine) ? engine : allowed[allowed.length - 1]
+}
 
 function getSupabase(token) {
   return createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -51,7 +66,7 @@ export async function syncUserProfile(token) {
     if (!data) return
     const isFounder = data.role === 'founder' || config.get('email') === 'henryfrancis238@gmail.com'
     const plan      = isFounder ? 'premium' : (data.plan || 'go')
-    const engine    = data.preferred_engine || 'vora'
+    const engine    = resolveEngine(data.preferred_engine, plan, isFounder)
     config.set('engine',    engine)
     config.set('plan',      plan)
     config.set('isFounder', isFounder)

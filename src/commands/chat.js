@@ -7,7 +7,7 @@ import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 
-const VERSION = 'v1.1.0'
+const VERSION = 'v1.1.5'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -19,16 +19,16 @@ const pad = (s, len) => s + ' '.repeat(Math.max(0, len - vis(s)))
 
 function showWelcome(engine, email, plan) {
   const isFounder   = config.get('isFounder') || false
-  const engineLabel = isFounder ? 'Talyn (Founder)' : (ENGINE_LABEL[engine] || engine)
+  const engineLabel = ENGINE_LABEL[engine] || engine
   const planLabel   = plan.charAt(0).toUpperCase() + plan.slice(1)
-  const cols        = Math.min(process.stdout.columns || 80, 120)
+  const cols        = process.stdout.columns || 80
   const innerWidth  = cols - 4
   const leftWidth   = Math.floor(innerWidth * 0.42)
   const rightWidth  = innerWidth - leftWidth - 3
 
   const leftLines = [
     '',
-    `  ${chalk.cyan('✸')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✸')}`,
+    `  ${chalk.cyan('✦')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✦')}`,
     '',
     `  ${chalk.gray('Engine')}  · ${chalk.cyan(engineLabel)}`,
     `  ${chalk.gray(email)}`,

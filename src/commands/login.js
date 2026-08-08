@@ -46,10 +46,8 @@ export async function login() {
     return
   }
 
-  // Use whatever engine the user has set in the app
-  const engine = isFounder
-    ? (userData?.preferred_engine || 'talyn')
-    : (userData?.preferred_engine || 'vora')
+  // Always use whatever engine the user has set in the app — no exceptions
+  const engine = userData?.preferred_engine || 'vora'
 
   config.set('token',     data.session.access_token)
   config.set('email',     email)

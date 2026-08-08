@@ -7,7 +7,7 @@ import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 
-const VERSION = 'v1.1.7'
+const VERSION = 'v1.1.8'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -148,11 +148,15 @@ export async function chat(prompt) {
     return
   }
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true })
 
   rl.on('SIGINT', () => {
-    console.log(chalk.cyan('\n\n✴ Goodbye!\n'))
-    rl.close()
+    process.stdout.write('\r\x1b[2K')
+    console.log(chalk.cyan('\n✴ Goodbye!\n'))
+    process.exit(0)
+  })
+
+  rl.on('close', () => {
     process.exit(0)
   })
 
@@ -217,8 +221,7 @@ export async function chat(prompt) {
 
       if (cmd === '/exit' || cmd === '/quit') {
         console.log(chalk.cyan('\n✴ Goodbye!\n'))
-        rl.close()
-        return
+        process.exit(0)
       }
 
       console.log(chalk.yellow(`\n  Unknown command: ${trimmed}`))

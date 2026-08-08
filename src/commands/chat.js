@@ -8,7 +8,7 @@ import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 import { extractBashBlocks, runCommand } from '../utils/bash.js'
 
-const VERSION = 'v1.2.1'
+const VERSION = 'v1.2.2'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -149,7 +149,7 @@ export async function chat(prompt) {
     return
   }
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
   let awaitingConfirmation = false
 
   rl.on('SIGINT', () => {

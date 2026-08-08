@@ -7,7 +7,7 @@ import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 
-const VERSION = 'v1.1.5'
+const VERSION = 'v1.1.6'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -28,7 +28,7 @@ function showWelcome(engine, email, plan) {
 
   const leftLines = [
     '',
-    `  ${chalk.cyan('✦')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('✦')}`,
+    `  ${chalk.cyan('◆')}  ${chalk.bold.white('Zyctra')}  ${chalk.cyan('◆')}`,
     '',
     `  ${chalk.gray('Engine')}  · ${chalk.cyan(engineLabel)}`,
     `  ${chalk.gray(email)}`,

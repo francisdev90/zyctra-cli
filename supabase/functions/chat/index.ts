@@ -12,7 +12,6 @@ const MODEL_MAP: Record<string, string> = {
 }
 
 const PLAN_RANK: Record<string, number> = { free: 0, go: 1, pro: 2, premium: 3, founder: 4 }
-const ENGINE_MIN_PLAN: Record<string, string> = { zev: 'free', vora: 'go', talyn: 'premium' }
 
 const PLAN_LIMITS: Record<string, { window: number; daily: number; windowHours: number }> = {
   go:      { window: 15,       daily: 50,       windowHours: 3 },
@@ -72,15 +71,18 @@ Deno.serve(async (req: Request) => {
 
   const { messages, attachments } = await req.json()
 
-  // Engine always comes from the user's profile — same as the app
-  const engine = profile?.preferred_engine ?? 'vora'
-  const model  = MODEL_MAP[engine] ?? MODEL_MAP.vora
-
-  // Validate engine is allowed for this plan
-  const minPlan = ENGINE_MIN_PLAN[engine] ?? 'go'
-  if (!isFounder && PLAN_RANK[plan] < PLAN_RANK[minPlan]) {
-    return err(`Engine ${engine} requires ${minPlan} plan or higher. Change your engine in the Zyctra app.`, 403)
+  // Engine comes from the user's profile — validated against their plan
+  // If DB has an engine they can't use (e.g. talyn on Go plan), fall back gracefully
+  const ALLOWED_ENGINES: Record<string, string[]> = {
+    go:      ['zev', 'vora'],
+    pro:     ['zev', 'vora'],
+    premium: ['zev', 'vora', 'talyn'],
+    founder: ['zev', 'vora', 'talyn'],
   }
+  const rawEngine    = profile?.preferred_engine ?? 'vora'
+  const allowedList  = isFounder ? ['zev', 'vora', 'talyn'] : (ALLOWED_ENGINES[plan] ?? ['zev', 'vora'])
+  const engine       = allowedList.includes(rawEngine) ? rawEngine : allowedList[allowedList.length - 1]
+  const model        = MODEL_MAP[engine] ?? MODEL_MAP.vora
 
   // Check usage limits
   const limits  = PLAN_LIMITS[plan] ?? PLAN_LIMITS.go

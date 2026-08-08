@@ -142,7 +142,6 @@ export async function askZyctra(messages, _engine, attachments = [], options = {
       } else if (res.status === 403) {
         console.log(chalk.red(`\n✗ ${errMsg}`))
         console.log(chalk.gray('  Upgrade at zyctra.com/plans\n'))
-        process.exit(1)
       } else if (res.status === 429) {
         console.log(chalk.yellow(`\n⚠  ${errMsg}\n`))
       } else {

@@ -122,7 +122,8 @@ export async function askZyctra(messages, _engine, attachments = [], options = {
 
   const spinner = ora({
     text: '',
-    spinner: { frames: ['✦', '✧', '✦', '✧'], interval: 300 },
+    spinner: { frames: ['✴ ─', '✴ ╲', '✴ │', '✴ ╱'], interval: 100 },
+    color: 'cyan',
   }).start()
 
   let fullResponse = ''

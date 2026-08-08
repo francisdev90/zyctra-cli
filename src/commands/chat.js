@@ -8,7 +8,7 @@ import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 import { extractBashBlocks, runCommand } from '../utils/bash.js'
 
-const VERSION = 'v1.2.2'
+const VERSION = 'v1.2.3'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -108,13 +108,28 @@ function showHelp() {
 }
 
 function extractFilePaths(text) {
-  const found = []
-  const re    = /(?:^|[\s"'`])(\.{0,2}[/\\]?[\w\-./ \\]+\.\w+)/g
+  const found   = []
+  const trimmed = text.trim()
+
+  // Fast path: entire input is a file path (most common when pasting an image/file path)
+  if (FILE_EXT_RE.test(trimmed) && fs.existsSync(trimmed)) return [trimmed]
+
   let m
-  while ((m = re.exec(text)) !== null) {
+
+  // Windows absolute paths: C:\... or C:/... (spaces allowed in folder/file names)
+  const winRe = /[A-Za-z]:[/\\][\w\s\-.()[\]/\\]+\.\w+/g
+  while ((m = winRe.exec(text)) !== null) {
+    const p = m[0].trimEnd()
+    if (FILE_EXT_RE.test(p) && fs.existsSync(p)) found.push(p)
+  }
+
+  // Relative paths and Unix absolute paths (no spaces)
+  const relRe = /(?:^|[\s"'`])(\.{0,2}[/\\][\w\-./\\]+\.\w+)/g
+  while ((m = relRe.exec(text)) !== null) {
     const p = m[1].trim()
     if (FILE_EXT_RE.test(p) && fs.existsSync(p)) found.push(p)
   }
+
   return [...new Set(found)]
 }
 
@@ -162,21 +177,33 @@ export async function chat(prompt) {
     process.exit(0)
   })
 
-  const divider = () => process.stdout.write(chalk.gray('─'.repeat(process.stdout.columns || 80)) + '\n')
+  const hr      = () => chalk.gray('─'.repeat(process.stdout.columns || 80))
+  const divider = () => process.stdout.write(hr() + '\n')
 
   const showPrompt = () => {
-    divider()
+    // Top divider
+    process.stdout.write(hr() + '\n')
+
+    // Usage warning inside the box (between top divider and prompt)
     if (!isFounder && lastUsage) {
       const { percentage, resetTime, blocked } = lastUsage
       if (blocked) {
-        console.log(chalk.red(`  ⊘ Limit reached · Resets at ${resetTime} · Add credits or upgrade at zyctra.com/plans`))
-        console.log(chalk.gray('  Your Zyctra app and CLI share the same usage pool.'))
+        process.stdout.write(chalk.red(`  ⊘ Limit reached · Resets at ${resetTime} · Add credits or upgrade at zyctra.com/plans`) + '\n')
+        process.stdout.write(chalk.gray('  Your Zyctra app and CLI share the same usage pool.') + '\n')
       } else if (percentage >= 90) {
-        console.log(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime} · App + CLI share this limit`))
+        process.stdout.write(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime} · App + CLI share this limit`) + '\n')
       } else if (percentage >= 80) {
-        console.log(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime}`))
+        process.stdout.write(chalk.yellow(`  ⚠ ${percentage}% used · Resets at ${resetTime}`) + '\n')
       }
     }
+
+    // Empty prompt line, then bottom divider
+    process.stdout.write('\n')
+    process.stdout.write(hr() + '\n')
+
+    // Move cursor up 2 lines (bottom divider → prompt line)
+    process.stdout.write('\x1b[2A\r')
+
     rl.setPrompt(chalk.cyan('❯ '))
     rl.resume()
     rl.prompt()

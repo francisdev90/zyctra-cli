@@ -8,7 +8,7 @@ import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
 import { extractBashBlocks, runCommand } from '../utils/bash.js'
 
-const VERSION = 'v1.2.0'
+const VERSION = 'v1.2.1'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -46,7 +46,7 @@ function showWelcome(engine, email, plan) {
     `${chalk.cyan('/plan')}    ${chalk.gray('Show your plan')}`,
     `${chalk.cyan('/exit')}    ${chalk.gray('Exit Zyctra')}`,
     '',
-    chalk.gray('Tip: paste any file path to read it'),
+    chalk.gray('Tip: paste any file path or image path'),
     '',
   ]
 
@@ -93,9 +93,9 @@ function showHelp() {
   console.log(`  ${chalk.cyan('/exit')}         Exit Zyctra CLI`)
   console.log('')
   console.log(chalk.bold.white('  File & URL support'))
-  console.log(`  ${chalk.gray('Paste any file path')}  ${chalk.gray('→ reads it into context')}`)
+  console.log(`  ${chalk.gray('Paste any file path')}   ${chalk.gray('→ reads it into context')}`)
+  console.log(`  ${chalk.gray('Paste any image path')}  ${chalk.gray('→ sends as vision input')}`)
   console.log(`  ${chalk.gray('Paste any URL')}         ${chalk.gray('→ fetches and reads it')}`)
-  console.log(`  ${chalk.gray('Paste an image path')}   ${chalk.gray('→ sends as vision input')}`)
   console.log('')
   console.log(chalk.bold.white('  Other commands'))
   console.log(`  ${chalk.cyan('zyctra fix <file>')}     Analyze and fix a file`)
@@ -178,6 +178,7 @@ export async function chat(prompt) {
       }
     }
     rl.setPrompt(chalk.cyan('❯ '))
+    rl.resume()
     rl.prompt()
   }
 
@@ -190,11 +191,7 @@ export async function chat(prompt) {
     if (trimmed.startsWith('/')) {
       const cmd = trimmed.toLowerCase().split(' ')[0]
 
-      if (cmd === '/help') {
-        showHelp()
-        showPrompt()
-        return
-      }
+      if (cmd === '/help') { showHelp(); showPrompt(); return }
 
       if (cmd === '/clear') {
         messages.length = 0
@@ -234,6 +231,7 @@ export async function chat(prompt) {
     }
 
     // ── Regular message ─────────────────────────────────────────────
+    rl.pause()
     divider()
 
     const attachments   = []
@@ -278,7 +276,6 @@ export async function chat(prompt) {
     console.log('')
     messages.push({ role: 'user', content: enrichedContent })
     const response = await askZyctra(messages, engine, attachments)
-
     if (response) messages.push({ role: 'assistant', content: response })
 
     // ── Bash tool ───────────────────────────────────────────────────
@@ -286,11 +283,13 @@ export async function chat(prompt) {
     for (const cmd of cmds) {
       console.log('')
       console.log(chalk.cyan('  ⚡ Run: ') + chalk.white(cmd))
+      rl.resume()
       awaitingConfirmation = true
       const answer = await new Promise(resolve => {
         rl.question(chalk.gray('  Allow? [Y/n] '), resolve)
       })
       awaitingConfirmation = false
+      rl.pause()
       if (answer.trim().toLowerCase() !== 'n') {
         console.log('')
         const result = await runCommand(cmd)
@@ -306,12 +305,12 @@ export async function chat(prompt) {
       }
     }
 
-    // Refresh usage after each response so the status above ❯ stays current
+    // Refresh usage so the status above ❯ stays current
     if (!isFounder) {
       lastUsage = await getUsageStats(token)
     }
 
-    showPrompt()
+    showPrompt()  // always called last — does rl.resume() + rl.prompt()
   })
 
   showPrompt()

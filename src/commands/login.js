@@ -54,7 +54,7 @@ export async function login() {
   }
   const rawEngine  = userData?.preferred_engine || 'vora'
   const allowed    = isFounder ? ['zev', 'vora', 'talyn'] : (ALLOWED_ENGINES[plan] || ['zev', 'vora'])
-  const engine     = allowed.includes(rawEngine) ? rawEngine : allowed[allowed.length - 1]
+  const engine     = allowed.includes(rawEngine) ? rawEngine : 'vora'
 
   config.set('token',     data.session.access_token)
   config.set('email',     email)

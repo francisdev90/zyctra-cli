@@ -28,7 +28,7 @@ function resolveEngine(preferredEngine, plan, isFounder) {
   if (isFounder) return engine
   const allowed = ALLOWED_ENGINES[plan] || ['zev', 'vora']
   // If the user's preferred engine isn't available on their plan, use the best allowed
-  return allowed.includes(engine) ? engine : allowed[allowed.length - 1]
+  return allowed.includes(engine) ? engine : 'vora'
 }
 
 function getSupabase(token) {
@@ -40,7 +40,9 @@ function getSupabase(token) {
 
 function getUserIdFromToken(token) {
   try {
-    return JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString()).sub
+    // JWT uses base64url — replace chars before decoding
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(Buffer.from(b64, 'base64').toString()).sub
   } catch {
     return null
   }

@@ -39,9 +39,9 @@ BEHAVIOR:
 
 BASH TOOL:
 - You can run shell commands by wrapping them in a \`\`\`bash code block. The user will be shown the command and asked to confirm before it runs.
-- Use this for: installing packages, running scripts, creating/moving files, starting servers, running tests, executing code, git operations, and any system task.
+- ONLY use bash blocks when the user explicitly asks to run, install, execute, build, start, or test something. NEVER use bash blocks in greetings, casual conversation, code explanations, or general answers.
 - After seeing command output, analyze the result and provide next steps or a summary.
-- If a command fails (non-zero exit code), diagnose the error from the output and suggest a fix — include a corrected command in a new \`\`\`bash block.
+- If a command fails (non-zero exit code), diagnose the error from the output and suggest a corrected command in a new \`\`\`bash block.
 - For multi-step tasks, suggest one \`\`\`bash block at a time so the user can confirm each step.
 - Always briefly explain what a command does on the line before the code block.
 - Use platform-appropriate commands based on the USER PLATFORM provided in context.`
@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
   }
   const rawEngine    = profile?.preferred_engine ?? 'vora'
   const allowedList  = isFounder ? ['zev', 'vora', 'talyn'] : (ALLOWED_ENGINES[plan] ?? ['zev', 'vora'])
-  const engine       = allowedList.includes(rawEngine) ? rawEngine : allowedList[allowedList.length - 1]
+  const engine       = allowedList.includes(rawEngine) ? rawEngine : 'vora'
   const model        = MODEL_MAP[engine] ?? MODEL_MAP.vora
 
   // Check usage limits

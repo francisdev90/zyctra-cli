@@ -3,9 +3,9 @@ import chalk from 'chalk'
 import ora from 'ora'
 import { config } from './config.js'
 
-const SUPABASE_URL   = 'https://ewqcetzyzjhdzbyxphla.supabase.co'
-const SUPABASE_KEY   = 'sb_publishable_PcVlEjFAHPGvNqTo3jZieg_jTTv0sSc'
-const CHAT_ENDPOINT  = `${SUPABASE_URL}/functions/v1/chat`
+const SUPABASE_URL  = 'https://ewqcetzyzjhdzbyxphla.supabase.co'
+const SUPABASE_KEY  = 'sb_publishable_PcVlEjFAHPGvNqTo3jZieg_jTTv0sSc'
+const CHAT_ENDPOINT = `${SUPABASE_URL}/functions/v1/chat`
 
 const PLAN_LIMITS = {
   go:      { window: 15,       daily: 50,       windowHours: 3 },
@@ -13,6 +13,8 @@ const PLAN_LIMITS = {
   premium: { window: 60,       daily: 200,      windowHours: 3 },
   founder: { window: Infinity, daily: Infinity, windowHours: 3 },
 }
+
+const ENGINE_LABEL = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }
 
 function getSupabase(token) {
   return createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -33,27 +35,53 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+// Fetches the user's current engine + plan from DB on every session start
+// so the CLI always reflects what they have set in the app — no re-login needed
+export async function syncUserProfile(token) {
+  if (!token) return
+  try {
+    const supabase = getSupabase(token)
+    const userId   = config.get('userId') || getUserIdFromToken(token)
+    if (!userId) return
+    const { data } = await supabase
+      .from('users')
+      .select('preferred_engine, plan, role')
+      .eq('id', userId)
+      .single()
+    if (!data) return
+    const isFounder = data.role === 'founder' || config.get('email') === 'henryfrancis238@gmail.com'
+    const plan      = isFounder ? 'premium' : (data.plan || 'go')
+    const engine    = data.preferred_engine || 'vora'
+    config.set('engine',    engine)
+    config.set('plan',      plan)
+    config.set('isFounder', isFounder)
+  } catch {
+    // fall back to cached config values if offline
+  }
+}
+
+// Returns usage percentage only — used to show a warning when approaching the limit
 export async function getUsageStats(token) {
   if (!token || config.get('isFounder')) return {}
   try {
     const supabase  = getSupabase(token)
     const userId    = config.get('userId') || getUserIdFromToken(token)
     if (!userId) return {}
-    const plan      = config.get('plan') || 'go'
-    const limits    = PLAN_LIMITS[plan] ?? PLAN_LIMITS.go
+    const plan   = config.get('plan') || 'go'
+    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.go
     if (limits.window === Infinity) return {}
-    const now           = new Date()
-    const threeHoursAgo = new Date(now - limits.windowHours * 60 * 60 * 1000).toISOString()
-    const { data: windowMsgs } = await supabase
+    const now            = new Date()
+    const windowStart    = new Date(now - limits.windowHours * 60 * 60 * 1000).toISOString()
+    const { data: msgs } = await supabase
       .from('usage').select('created_at')
       .eq('user_id', userId).eq('type', 'message')
-      .gte('created_at', threeHoursAgo).order('created_at', { ascending: true })
-    const windowCount  = windowMsgs?.length ?? 0
-    const percentage   = Math.min(100, Math.round((windowCount / limits.window) * 100))
-    const oldest       = windowMsgs?.[0]
-    const resetAt      = oldest
-      ? new Date(new Date(oldest.created_at).getTime() + 3 * 60 * 60 * 1000)
-      : new Date(now.getTime() + 3 * 60 * 60 * 1000)
+      .gte('created_at', windowStart).order('created_at', { ascending: true })
+    const count      = msgs?.length ?? 0
+    const percentage = Math.min(100, Math.round((count / limits.window) * 100))
+    const oldest     = msgs?.[0]
+    const resetAt    = oldest
+      ? new Date(new Date(oldest.created_at).getTime() + limits.windowHours * 60 * 60 * 1000)
+      : new Date(now.getTime() + limits.windowHours * 60 * 60 * 1000)
     return { percentage, resetTime: formatTime(resetAt) }
   } catch {
     return {}
@@ -102,17 +130,14 @@ export async function askZyctra(messages, _engine, attachments = [], options = {
         process.exit(1)
       } else if (res.status === 429) {
         console.log(chalk.yellow(`\n⚠  ${errMsg}\n`))
-        process.exit(1)
       } else {
         console.log(chalk.red(`\n✗ ${errMsg}\n`))
       }
       return null
     }
 
-    const engine      = config.get('engine') || 'vora'
-    const engineLabel = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }[engine] || 'Zyctra'
-
-    if (!options.silent) process.stdout.write(chalk.cyan(`${engineLabel} · `))
+    const engine = config.get('engine') || 'vora'
+    if (!options.silent) process.stdout.write(chalk.cyan(`${ENGINE_LABEL[engine] || 'Zyctra'} · `))
 
     // Parse Anthropic SSE stream
     const reader  = res.body.getReader()

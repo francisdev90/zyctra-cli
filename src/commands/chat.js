@@ -2,7 +2,7 @@ import readline from 'readline'
 import fs from 'fs'
 import chalk from 'chalk'
 import { config } from '../config.js'
-import { askZyctra, getUsageStats } from '../ai.js'
+import { askZyctra, getUsageStats, syncUserProfile } from '../ai.js'
 import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
@@ -126,12 +126,28 @@ export async function chat(prompt) {
     return
   }
 
+  // Always sync engine + plan from DB on session start
+  // so it matches what the user has set in the app — no re-login needed
+  await syncUserProfile(token)
+
   const email     = config.get('email')     || ''
   const engine    = config.get('engine')    || 'vora'
   const plan      = config.get('plan')      || 'go'
   const isFounder = config.get('isFounder') || false
 
   showWelcome(engine, email, plan)
+
+  // Show a one-time warning if approaching the usage limit
+  if (!isFounder) {
+    const { percentage, resetTime } = await getUsageStats(token)
+    if (percentage >= 80) {
+      const termWidth = process.stdout.columns || 80
+      const t = percentage >= 100
+        ? `⚠ Limit reached · Resets at ${resetTime} · zyctra.com/plans`
+        : `⚠ ${percentage}% used · Resets at ${resetTime}`
+      console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.yellow(t))
+    }
+  }
 
   const messages = []
 
@@ -212,26 +228,6 @@ export async function chat(prompt) {
 
     // ── Regular message ─────────────────────────────────────────────
     divider()
-
-    // Show usage stats (non-blocking, best-effort)
-    if (!isFounder) {
-      const { percentage, resetTime } = await getUsageStats(token)
-      if (percentage !== undefined) {
-        const termWidth = process.stdout.columns || 80
-        if (percentage >= 100) {
-          const t = `✗ Usage limit reached · Resets at ${resetTime} · zyctra.com/plans`
-          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.red(t))
-          showPrompt()
-          return
-        } else if (percentage >= 80) {
-          const t = `⚠ ${percentage}% used · Resets at ${resetTime}`
-          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.yellow(t))
-        } else if (percentage > 0) {
-          const t = `${percentage}% used · Resets at ${resetTime}`
-          console.log(' '.repeat(Math.max(0, termWidth - t.length)) + chalk.gray(t))
-        }
-      }
-    }
 
     const attachments    = []
     let enrichedContent  = trimmed

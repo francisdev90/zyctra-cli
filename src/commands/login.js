@@ -3,14 +3,16 @@ import chalk from 'chalk'
 import { createClient } from '@supabase/supabase-js'
 import { config } from '../config.js'
 
+const SUPABASE_URL  = 'https://ewqcetzyzjhdzbyxphla.supabase.co'
+const SUPABASE_KEY  = 'sb_publishable_PcVlEjFAHPGvNqTo3jZieg_jTTv0sSc'
+const FOUNDER_EMAIL = 'henryfrancis238@gmail.com'
+const PAID_PLANS    = new Set(['go', 'pro', 'premium'])
+
+const ENGINE_LABEL  = { zev: 'Zev', vora: 'Vora', talyn: 'Talyn' }
+
 let supabase = null
 function getSupabase() {
-  if (!supabase) {
-    const url = process.env.SUPABASE_URL || 'https://ewqcetzyzjhdzbyxphla.supabase.co'
-    const key = process.env.SUPABASE_KEY || ''
-    if (!key) throw new Error('SUPABASE_KEY not set')
-    supabase = createClient(url, key)
-  }
+  if (!supabase) supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
   return supabase
 }
 
@@ -31,21 +33,34 @@ export async function login() {
 
   const { data: userData } = await getSupabase()
     .from('users')
-    .select('plan, role, id, full_name')
+    .select('plan, role, id, full_name, preferred_engine')
     .eq('email', email)
     .single()
 
-  const isFounder = userData?.role === 'founder' || email === 'henryfrancis238@gmail.com'
-  const plan      = isFounder ? 'founder' : (userData?.plan || 'free')
-  const engine    = isFounder ? 'talyn' : ({ free: 'zev', pro: 'vora', premium: 'talyn' }[plan] || 'vora')
+  const isFounder = userData?.role === 'founder' || email.toLowerCase() === FOUNDER_EMAIL
+  const plan      = isFounder ? 'premium' : (userData?.plan || 'free')
 
-  config.set('token', data.session.access_token)
-  config.set('email', email)
-  config.set('plan', plan)
-  config.set('engine', engine)
-  config.set('userId', userData?.id)
+  if (!isFounder && !PAID_PLANS.has(plan)) {
+    console.log(chalk.red('\n✗ Zyctra CLI requires a paid plan.'))
+    console.log(chalk.gray(`  You're on the Free plan. Upgrade at zyctra.com/plans\n`))
+    return
+  }
+
+  // Use whatever engine the user has set in the app
+  const engine = isFounder
+    ? (userData?.preferred_engine || 'talyn')
+    : (userData?.preferred_engine || 'vora')
+
+  config.set('token',     data.session.access_token)
+  config.set('email',     email)
+  config.set('plan',      plan)
+  config.set('engine',    engine)
+  config.set('userId',    userData?.id)
   config.set('isFounder', isFounder)
 
+  const planLabel   = plan.charAt(0).toUpperCase() + plan.slice(1)
+  const engineLabel = ENGINE_LABEL[engine] || engine
+
   console.log(chalk.green('\n✓ Logged in successfully!'))
-  console.log(chalk.cyan(`✸ Plan: ${plan} · Engine: ${engine}\n`))
+  console.log(chalk.cyan(`✸ Plan: ${planLabel} · Engine: ${engineLabel}\n`))
 }

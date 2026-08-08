@@ -1,12 +1,4 @@
 #!/usr/bin/env node
-import { createRequire } from 'module'
-import { fileURLToPath } from 'url'
-import path from 'path'
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const require = createRequire(import.meta.url)
-const dotenv = require('dotenv')
-dotenv.config({ path: path.resolve(__dirname, '../.env') })
-
 import { program } from 'commander'
 import { chat } from '../src/commands/chat.js'
 import { login } from '../src/commands/login.js'
@@ -24,7 +16,7 @@ import { editFile } from '../src/commands/edit.js'
 program
   .name('zyctra')
   .description('Zyctra AI assistant for your terminal')
-  .version('1.0.8')
+  .version('1.1.0')
 
 program
   .command('login')

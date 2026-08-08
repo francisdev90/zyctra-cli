@@ -35,7 +35,16 @@ BEHAVIOR:
 - When making code changes, clearly state what you changed and why before showing the result.
 - When editing files, show the specific lines that changed (before → after).
 - Be direct: say what you are going to do, then do it. No filler.
-- If you spot a bug or issue in a file, name the exact file and line number if visible.`
+- If you spot a bug or issue in a file, name the exact file and line number if visible.
+
+BASH TOOL:
+- You can run shell commands by wrapping them in a \`\`\`bash code block. The user will be shown the command and asked to confirm before it runs.
+- Use this for: installing packages, running scripts, creating/moving files, starting servers, running tests, executing code, git operations, and any system task.
+- After seeing command output, analyze the result and provide next steps or a summary.
+- If a command fails (non-zero exit code), diagnose the error from the output and suggest a fix — include a corrected command in a new \`\`\`bash block.
+- For multi-step tasks, suggest one \`\`\`bash block at a time so the user can confirm each step.
+- Always briefly explain what a command does on the line before the code block.
+- Use platform-appropriate commands based on the USER PLATFORM provided in context.`
 
 function err(msg: string, status: number) {
   return new Response(JSON.stringify({ error: msg }), {
@@ -69,7 +78,14 @@ Deno.serve(async (req: Request) => {
     return err('Zyctra CLI requires a paid plan (Go, Pro, or Premium). Upgrade at zyctra.com/plans', 403)
   }
 
-  const { messages, attachments } = await req.json()
+  const { messages, attachments, platform } = await req.json()
+  const platformLabel = platform === 'win32' ? 'Windows (use PowerShell commands)'
+    : platform === 'darwin' ? 'macOS (use bash/zsh commands)'
+    : platform === 'linux'  ? 'Linux (use bash commands)'
+    : null
+  const systemPrompt = platformLabel
+    ? SYSTEM_PROMPT + `\n\nUSER PLATFORM: ${platformLabel}`
+    : SYSTEM_PROMPT
 
   // Engine comes from the user's profile — validated against their plan
   // If DB has an engine they can't use (e.g. talyn on Go plan), fall back gracefully
@@ -163,7 +179,7 @@ Deno.serve(async (req: Request) => {
     body: JSON.stringify({
       model,
       max_tokens: 4096,
-      system:     SYSTEM_PROMPT,
+      system:     systemPrompt,
       messages:   processedMessages,
       stream:     true,
     }),

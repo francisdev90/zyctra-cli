@@ -6,8 +6,9 @@ import { askZyctra, getUsageStats, syncUserProfile } from '../ai.js'
 import { readFile } from '../utils/fileReader.js'
 import { readUrl } from '../utils/urlReader.js'
 import { searchWeb } from '../utils/webSearch.js'
+import { extractBashBlocks, runCommand } from '../utils/bash.js'
 
-const VERSION = 'v1.1.9'
+const VERSION = 'v1.2.0'
 
 const SEARCH_KEYWORDS = ['search', 'find', 'latest', 'current', 'today', 'news', 'what is', 'who is', 'when did', 'where is']
 const FILE_EXT_RE     = /\.(js|ts|jsx|tsx|py|json|md|txt|html|css|png|jpg|jpeg|gif|webp|pdf|sql|yaml|yml|xml|sh|go|rs|rb|java|cpp|c|php|env|gitignore)$/i
@@ -149,6 +150,7 @@ export async function chat(prompt) {
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+  let awaitingConfirmation = false
 
   rl.on('SIGINT', () => {
     process.stdout.write('\r\x1b[2K')
@@ -180,6 +182,7 @@ export async function chat(prompt) {
   }
 
   rl.on('line', async (input) => {
+    if (awaitingConfirmation) return
     const trimmed = input.trim()
     if (!trimmed) { rl.prompt(); return }
 
@@ -277,6 +280,31 @@ export async function chat(prompt) {
     const response = await askZyctra(messages, engine, attachments)
 
     if (response) messages.push({ role: 'assistant', content: response })
+
+    // ── Bash tool ───────────────────────────────────────────────────
+    const cmds = extractBashBlocks(response || '')
+    for (const cmd of cmds) {
+      console.log('')
+      console.log(chalk.cyan('  ⚡ Run: ') + chalk.white(cmd))
+      awaitingConfirmation = true
+      const answer = await new Promise(resolve => {
+        rl.question(chalk.gray('  Allow? [Y/n] '), resolve)
+      })
+      awaitingConfirmation = false
+      if (answer.trim().toLowerCase() !== 'n') {
+        console.log('')
+        const result = await runCommand(cmd)
+        const parts = []
+        if (result.stdout) parts.push(result.stdout)
+        if (result.stderr) parts.push(`[stderr]\n${result.stderr}`)
+        parts.push(`[exit code: ${result.code}]`)
+        const outputStr = parts.join('\n').slice(0, 8000)
+        messages.push({ role: 'user', content: `Command: ${cmd}\nOutput:\n${outputStr}` })
+        console.log('')
+        const followUp = await askZyctra(messages, engine, [])
+        if (followUp) messages.push({ role: 'assistant', content: followUp })
+      }
+    }
 
     // Refresh usage after each response so the status above ❯ stays current
     if (!isFounder) {

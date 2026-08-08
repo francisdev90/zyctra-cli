@@ -135,7 +135,7 @@ export async function askZyctra(messages, _engine, attachments = [], options = {
         'Authorization': `Bearer ${token}`,
         'Content-Type':  'application/json',
       },
-      body: JSON.stringify({ messages, attachments }),
+      body: JSON.stringify({ messages, attachments, platform: process.platform }),
     })
 
     spinner.stop()
